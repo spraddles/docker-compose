@@ -1,0 +1,21 @@
+# Base image
+FROM ubuntu:18.04
+
+# Headless install (otherwise it hangs)
+ENV DEBIAN_FRONTEND=noninteractive
+
+# System updates
+RUN apt-get update && apt -y install --no-install-recommends software-properties-common
+RUN add-apt-repository ppa:ondrej/php
+RUN apt-get update && apt -y install php7.4 php7.4-curl php7.4-mbstring php7.4-xml php7.4-zip php7.4-intl unzip curl git build-essential
+
+# Install Node
+RUN curl -sL https://deb.nodesource.com/setup_12.x | bash - && apt install -y nodejs
+
+# Install Grunt (with node-sass fix)
+RUN npm install -g grunt-cli
+RUN npm uninstall node-sass && npm install node-sass
+RUN npm rebuild node-sass
+
+# Install Node web server instead of PHP server (use Express?)
+RUN npm install -g http-server

@@ -1,0 +1,122 @@
+version: "3.3"
+
+services:
+
+    database:
+        container_name:
+            "my-database"
+        image:
+            mysql/mysql-server:5.7.33
+        command: 
+            --default-authentication-plugin=mysql_native_password
+        ports:
+            - "3306:3306"
+        volumes:
+            - ./src/database.sql:/docker-entrypoint-initdb.d/database.sql #bind mount
+            - mysql-data:/var/lib/mysql #volume mount
+        healthcheck:
+            # @TODO: a better healthcheck is needed
+            test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+            timeout: 20s
+            retries: 10
+        environment:
+            MYSQL_DATABASE: "my_database"
+            #MYSQL_USER: "dev" // root already exists by default
+            #MYSQL_USER_PASSWORD: "password"
+            MYSQL_ROOT_PASSWORD: "password"
+            MYSQL_ROOT_HOST: "%"
+            TZ: "UTC"
+        restart:
+            always
+
+
+    phpmyadmin:
+        container_name:
+            "my-phpmyadmin"
+        image: 
+            phpmyadmin/phpmyadmin:5
+        ports:
+            - "8080:80"
+        depends_on:
+            database:
+                condition: service_healthy
+        environment:
+            PMA_HOST: database
+            PMA_USER: "root"
+            PMA_PASSWORD: "password"
+            PMA_ARBITRARY: "1"
+        restart:
+            always
+
+
+    backend:
+        container_name:
+            "my-backend"
+        ports:
+            - "8765:8765"
+        build:
+            context: ../
+            dockerfile: ./docker-compose/services/backend/dockerfile-backend
+        volumes:
+            - ../my-backend:/my-backend #bind mount
+        working_dir:
+            /my-backend
+        entrypoint:
+            bin/cake server -H 0.0.0.0 -p 8765
+            #["tail", "-f", "/dev/null"] # keeps container alive for diagnosing
+        environment:
+            DB_HOST: database
+        depends_on:
+            database:
+                condition: service_healthy
+        restart:
+            always
+
+
+#    nginx:
+#        container_name:
+#            "my-nginx"
+#        build:
+#            context: .
+#            dockerfile: ./services/nginx/dockerfile-nginx
+#        #test this: working_dir: 
+#            #/my-nginx
+#        volumes:
+#            - ./services/nginx:/my-nginx #bind mount
+#        environment:
+#            # which host, backend or frontend?
+#            NGINX_FPM_HOST: backend
+#            NGINX_ROOT: /usr/src/app/public
+#        ports:
+#            - "8000:80" # may conflict with phpMyAdmin
+#        #depends_on:
+#            #- backend
+#                #condition: service_healthy
+#        restart:
+#            always
+
+
+    frontend:
+        container_name:
+            "my-frontend"
+        ports:
+            - "8000:8000"
+        build:
+            context: .
+            dockerfile: ./services/frontend/dockerfile-frontend
+        volumes:
+            - ../my-frontend:/my-frontend #bind mount
+        working_dir:
+            /my-frontend
+        entrypoint:
+            http-server -p 8000
+            #["tail", "-f", "/dev/null"] # keeps container alive for diagnosing
+        environment:
+            DB_HOST: database
+        restart:
+            always
+
+
+# shared mounted volumes
+volumes:
+    mysql-data:
