@@ -1,7 +1,4 @@
-README
-
-
-Instructions:  
+### Instructions
 - install Docker Desktop: https://www.docker.com/products/docker-desktop
 - download this repo (docker-compose) and make sure it's in the same root DIR as the Frontend + Backend GIT repos, i.e. so you have all 3 repos at the same level
 - get a dump of Production database and rename to 'database.sql' in the 'src' DIR
@@ -16,16 +13,16 @@ This will create the following endpoints on your Local:
 - Frontend: http://localhost:8000/marketing/home.html
 
 
-Other commands:
+### Other commands
 - 'docker compose down && docker system prune --all -f' removes all containers, networks, images, and persistent volumes (e.g. Database)
 - sometimes this prune command doesn't work (known Docker bug) so just repeat it a couple times & it will work after a few tries
 
 
-Issues: 
+### Issues
 - phpMyAdmin can't connect error: wait about 30 seconds for all Docker services to run (due to healthcheck issues)
 
 
-Tasks:
+### Tasks
 - frontend service: add in 'grunt watch'
 - database service: create a better healthcheck for MySQL, current one has issues
 - backend service create a healthcheck for the backend
@@ -34,7 +31,7 @@ Tasks:
 - remove un-needed .sh files in service directories
 
 
-Notes:
+### Notes
 - the first time you run Docker it will take a few minutes, subsequent runs will go faster
 - SQL database: remember to update this file often to keep parity with the Prod Database
 - SQL database: this is volume mounted & persists in Docker, meaning changes you make to it will stay unless you remove the volume (use the prune command to do this)
