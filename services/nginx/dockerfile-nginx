@@ -5,7 +5,7 @@ ARG FPM_HOST=laravel
 RUN apk update && apk add bash
 
 # custom nginx config
-COPY infra/docker/services/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY services/nginx/default.conf /etc/nginx/conf.d/default.conf
 RUN sed -i "s/fastcgi_pass_network_address/${FPM_HOST}/g" /etc/nginx/conf.d/default.conf
 
 # serve from laravel public directory

@@ -1,116 +1,73 @@
-version: "3.3"
+version: '3.8'
 
 services:
 
-    database:
-        container_name:
-            "my-database"
-        image:
-            mysql/mysql-server:5.7.33
-        command: 
-            --default-authentication-plugin=mysql_native_password
-        ports:
-            - "3306:3306"
-        volumes:
-            - ./src/database.sql:/docker-entrypoint-initdb.d/database.sql #bind mount
-            - mysql-data:/var/lib/mysql #volume mount
-        healthcheck:
-            # @TODO: a better healthcheck is needed
-            test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-            timeout: 20s
-            retries: 10
-        environment:
-            MYSQL_DATABASE: "my_database"
-            #MYSQL_USER: "dev" // root already exists by default
-            #MYSQL_USER_PASSWORD: "password"
-            MYSQL_ROOT_PASSWORD: "password"
-            MYSQL_ROOT_HOST: "%"
-            TZ: "UTC"
-        restart:
-            always
+  laravel:
+    container_name: my_laravel
+    ports:
+      - "${APP_PORT}:8000"
+    build:
+      context: .
+      dockerfile: services/laravel/dockerfile-backend
+    entrypoint:
+      php artisan serve --host=0.0.0.0 --port=8000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes: 
+      - ./laravel:/app # bind mount
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
 
+  database:
+    container_name: my_postgres
+    image: postgres:13.6
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_DB: "${DB_DATABASE}"
+      POSTGRES_USER: "${DB_USERNAME}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      #POSTGRES_HOST_AUTH_METHOD: "trust"
+    restart: unless-stopped
 
-    phpmyadmin:
-        container_name:
-            "my-phpmyadmin"
-        image: 
-            phpmyadmin/phpmyadmin:5
-        ports:
-            - "8080:80"
-        depends_on:
-            database:
-                condition: service_healthy
-        environment:
-            PMA_HOST: database
-            PMA_USER: "root"
-            PMA_PASSWORD: "password"
-            PMA_ARBITRARY: "1"
-        restart:
-            always
+  nginx:
+    container_name: my_nginx
+    build:
+      context: .
+      dockerfile: services/nginx/dockerfile-nginx
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "service", "nginx", "status"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "443:443"
+      - "8080:80"
+    depends_on:
+      laravel:
+        condition: service_healthy
 
+  mailhog:
+    container_name: my_mailhog
+    image: 
+      'mailhog/mailhog'
+    ports:
+      - "${MAILHOG_PORT}:8025"
+    restart: on-failure
 
-    backend:
-        container_name:
-            "my-backend"
-        ports:
-            - "8765:8765"
-        build:
-            context: ../
-            dockerfile: ./docker-compose/services/backend/dockerfile-backend
-        volumes:
-            - ../my-backend:/my-backend #bind mount
-        working_dir:
-            /my-backend
-        entrypoint:
-            bin/cake server -H 0.0.0.0 -p 8765
-            #["tail", "-f", "/dev/null"] # keeps container alive for diagnosing
-        environment:
-            DB_HOST: database
-        depends_on:
-            database:
-                condition: service_healthy
-        restart:
-            always
-
-    nginx:
-        container_name: my_nginx
-        build:
-            context: .
-            dockerfile: infra/docker/services/nginx/dockerfile-nginx
-        restart: unless-stopped
-        healthcheck:
-            test: ["CMD", "service", "nginx", "status"]
-            interval: 5s
-            timeout: 5s
-            retries: 5
-        ports:
-            - "443:443"
-            - "8080:80"
-        depends_on:
-            laravel:
-                condition: service_healthy
-
-    frontend:
-        container_name:
-            "my-frontend"
-        ports:
-            - "8000:8000"
-        build:
-            context: .
-            dockerfile: ./services/frontend/dockerfile-frontend
-        volumes:
-            - ../my-frontend:/my-frontend #bind mount
-        working_dir:
-            /my-frontend
-        entrypoint:
-            http-server -p 8000
-            #["tail", "-f", "/dev/null"] # keeps container alive for diagnosing
-        environment:
-            DB_HOST: database
-        restart:
-            always
-
-
-# shared mounted volumes
 volumes:
-    mysql-data:
+    postgres-data:
+    my-laravel:
