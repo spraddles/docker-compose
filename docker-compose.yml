@@ -72,29 +72,23 @@ services:
         restart:
             always
 
-
-#    nginx:
-#        container_name:
-#            "my-nginx"
-#        build:
-#            context: .
-#            dockerfile: ./services/nginx/dockerfile-nginx
-#        #test this: working_dir: 
-#            #/my-nginx
-#        volumes:
-#            - ./services/nginx:/my-nginx #bind mount
-#        environment:
-#            # which host, backend or frontend?
-#            NGINX_FPM_HOST: backend
-#            NGINX_ROOT: /usr/src/app/public
-#        ports:
-#            - "8000:80" # may conflict with phpMyAdmin
-#        #depends_on:
-#            #- backend
-#                #condition: service_healthy
-#        restart:
-#            always
-
+    nginx:
+        container_name: my_nginx
+        build:
+            context: .
+            dockerfile: infra/docker/services/nginx/dockerfile-nginx
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "service", "nginx", "status"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+        ports:
+            - "443:443"
+            - "8080:80"
+        depends_on:
+            laravel:
+                condition: service_healthy
 
     frontend:
         container_name:
