@@ -1,5 +1,14 @@
 ### Instructions
-- install Docker Desktop: https://www.docker.com/products/docker-desktop
-- download this repo (docker-compose) and make sure it's in the same root DIR as the Frontend + Backend GIT repos, i.e. so you have all 3 repos at the same level
-- run 'docker compose up' to start (you can now edit your code live on your Local repos & this will be reflected in the Docker Container)
-- run 'docker compose down' to stop
+
+- Install Docker Desktop: [https://www.docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop)
+- Clone/download this `docker-compose` repo, and ensure it's placed in the same root directory as your **Frontend** and **Backend** repos — so all three repos are at the same folder level.
+- Start the containers:
+  ```bash
+  docker compose up
+  ```
+  You can now edit your code locally in your Frontend/Backend repos and see the changes reflected live inside the Docker container.
+
+- Stop the containers:
+  ```bash
+  docker compose down
+  ```
